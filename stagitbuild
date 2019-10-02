@@ -1,0 +1,138 @@
+#!/bin/bash
+
+out() { printf "$1 $2\n" "${@:3}"; }
+error() { out "==> ERROR:" "$@"; } >&2
+warning() { out "==> WARNING:" "$@"; } >&2
+msg() { out "==>" "$@"; }
+msg2() { out "  ->" "$@";}
+die() { error "$@"; exit 1; }
+
+usage() {
+	cat << "EOF"
+stagitbuild.sh - simple build script for stagit repositories
+  
+  Usage: stagitbuild.sh [options]
+    
+    -c <location>   Set a different location for the config file
+    -s <location>   Set an alternative source directory
+    -d <location>   Set an alternative destination directory
+    -g [location]   Generate configuration, with an optional location argument
+
+    -h/--help       Prints this help message
+
+EOF
+}
+
+createconf() {
+	[ -e $1 ] && die 'A configuration file already exists in %s' "$1"
+	cat > $1 <<EOF
+# Add your git repos inside e.g. (something someotherthing thirdthing)
+GITREPOS=()
+
+# Add the source directory e.g. "/home/git"
+SRC=""
+
+# Add the destination directory e.g. "/srv/http"
+# This is the directory where stagit will be served
+DEST=""
+
+# Add a destination if you want your git repositories to be rsynced somewhere (optional)
+DESTGIT=""
+
+# Add the location to your style.css here "/home/bar/style.css" (Optional)
+CSS=""
+
+# Add your favicon.png (Optional)
+FAVI=""
+
+# Add your logo.png [32x32] (Optional)
+LOGO=""
+
+## Uncomment this if you want stagitbuild to create 
+## archives from the tags of your repository
+#ARCHIVE="yes"
+
+EOF
+	cat <<EOF
+Configuration file is created to $1
+EOF
+}
+
+getrepogit() {
+	for repo in ${GITREPOS[*]}; do
+		repogit+=("${SRC}/${repo}.git")
+	done
+}	
+
+stylepage() {
+	[ -n "$CSS" ] && [ -e "$CSS" ] && cp -uf $CSS $1/style.css
+	[ -n "$FAVI" ] && [ -e "$FAVI" ] && cp -uf $FAVI $1/favicon.png
+	[ -n "$LOGO" ] && [ -e "$LOGO" ] && cp -uf $LOGO $1/logo.png
+}
+
+rsyncrepos() {
+	for repo in ${GITREPOS[*]}; do
+		rsync -a ${SRC}/${repo}.git ${DESTGIT} || die 'There was an error while rsyncing %s' "${repo}"
+	done
+}
+
+gitarchive() {
+	name="$1"
+	cd ${SRC}/${1}.git
+	if [ -n "$(git tag -l)" ]; then
+		mkdir -p ${DEST}/archives/${name}
+		git tag -l | while read -r t; do
+			f="${DEST}/archives/${name}/${name}-$(echo "${t}" | tr '/' '_').tar.gz"
+			test -f "${f}" && continue
+			git archive \
+				--format tar.gz \
+				--prefix "${name}-${t}/" \
+				-o "${f}" \
+				-- \
+				"${t}"
+		done
+	fi
+}
+
+buildgit() {
+	for repo in ${GITREPOS[*]}; do
+		mkdir ${DEST}/${repo} 2>/dev/null
+		cd ${DEST}/${repo}
+		stagit ${SRC}/${repo}.git
+		stylepage $PWD
+		[ "$ARCHIVE" = "yes" ] && gitarchive ${repo}
+	done
+	cd $DEST
+	stagit-index ${repogit[*]} > $DEST/index.html
+	stylepage $PWD
+}
+
+if [ "$1" = "-h" ] || [ "$1" = "--help" ] ; then
+	usage
+	exit
+fi
+
+while getopts ':c::s::d:g' flag; do
+	case $flag in
+		c) realpath -e $OPTARG 2>/dev/null && CONFIG=$(realpath ${OPTARG}) || die 'Could not find configuration' ;;
+		s) realpath -e $OPTARG 2>/dev/null && ALTSRC=$(realpath ${OPTARG}) || die 'Could not find source directory' ;;
+		d) realpath -e $OPTARG 2>/dev/null && ALTDES=$(realpath ${OPTARG}) || die 'Could not find destination dir' ;;
+		g) gen=1; genloc=$OPTARG ;;
+		:) die '%s: option requires an argument -- '\''%s'\' "${0##*/}" "$OPTARG" ;;
+		?) die '%s: invalid option -- '\''%s'\' "${0##*/}" "$OPTARG" ;;
+	esac
+done
+[ -z $genloc ] && genloc="$HOME/.stagitconf"
+[ "$gen" = 1 ] && createconf $genloc && exit
+[ -z "$CONFIG" ] && CONFIG="$HOME/.stagitconf"
+[ -e "$CONFIG" ] || createconf $CONFIG && exit
+[ -n "$ALTSRC" ] && SRC=$ALTSRC
+[ -n "$ALTDES" ] && DES=$ALTDES
+if [ -z "$SRC" ] || [ -z "$GITREPOS" ] || [ -z "$DEST" ]; then
+	die 'Required variables are not set'
+fi
+declare -a repogit
+
+getrepogit
+[ -n "$DESTGIT" ] && rsyncrepos
+buildgit

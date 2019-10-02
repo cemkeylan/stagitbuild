@@ -1,0 +1,35 @@
+stagitbuild
+===========
+
+Builder - manager for you stagit page.
+
+
+Description
+-----------
+
+stagitbuild generates a configuration file that you can 
+fill in order to not deal with writing hook-scripts to 
+get it to work. It works pretty straight-forward.
+
+
+Installation
+------------
+You can install the script with (if necessary as root):
+
+	make install
+
+and start using the script right away.
+
+
+Configuration
+-------------
+The script reads the generated configuration from
+~/.stagitconf , which explains all the configuration
+options. More detailed information is in the man page.
+
+Dependencies
+------------
+
+* git
+* stagit
+* (optional) rsync [for syncing git repo to another place]

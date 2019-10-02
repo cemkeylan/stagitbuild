@@ -1,0 +1,52 @@
+.TH STAGITBUILD 1 stagitbuild\-VERSION
+.SH NAME
+stagitbuild \- builder - manager for stagit
+.SH SYNOPSIS
+.B stagitbuild
+.RB [ \-c 
+.IR location ]
+.RB [ \-s
+.IR location ]
+.RB [ \-d
+.IR location ]
+.RB [ \-g
+.IR location ]
+.RB [ \-h ]
+.SH DESCRIPTION
+.B stagitbuild
+is a simple bash script for managing your stagit page. Stagitbuild
+will read a configuration file and will generate a stagit page. It will
+also read your git tags to generate tar.gz archives and put them to the
+.B /archives/reponame 
+directory
+
+stagitbuild can rsync selected repos to a different location, which is useful in cases
+where you have public and private repositories in a certain location and want
+to sync your public repositories to a place where you can serve them.
+.SH OPTIONS
+.TP
+.B SRC
+    \- source directory
+.TP
+.B DEST
+    \- stagit webpage directory
+.TP
+.B GITREPOS
+    \- (array) name of your git repos (without .git part)
+.TP
+.B DESTGIT
+    \- (optional) place to rsync git repos
+.TP
+.B CSS
+    \- (optional) location of style.css file
+.TP
+.B FAVI
+    \- (optional) location of favicon.png file
+.TP
+.B LOGO
+    \- (optional) location of logo.png file
+.TP
+.B ARCHIVE
+    \- option whether to create archives from git tags
+.SH AUTHOR
+Cem Keylan <cem@ckyln.com>
