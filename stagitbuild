@@ -8,10 +8,10 @@ msg2() { out "  ->" "$@";}
 die() { error "$@"; exit 1; }
 
 usage() {
-	cat << "EOF"
-stagitbuild.sh - simple build script for stagit repositories
+	cat << EOF
+${0##*/} - simple build script for stagit repositories
   
-  Usage: stagitbuild.sh [options]
+  Usage: ${0##*/} [options]
     
     -c <location>   Set a different location for the config file
     -s <location>   Set an alternative source directory
