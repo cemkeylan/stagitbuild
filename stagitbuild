@@ -1,11 +1,6 @@
-#!/bin/bash
+#!/bin/sh
 
-out() { printf "$1 $2\n" "${@:3}"; }
-error() { out "==> ERROR:" "$@"; } >&2
-warning() { out "==> WARNING:" "$@"; } >&2
-msg() { out "==>" "$@"; }
-msg2() { out "  ->" "$@";}
-die() { error "$@"; exit 1; }
+die() { printf "==> ERROR: %s\\n" "$1"; exit; }
 
 usage() {
 	cat << EOF
@@ -16,7 +11,7 @@ ${0##*/} - simple build script for stagit repositories
     -c <location>   Set a different location for the config file
     -s <location>   Set an alternative source directory
     -d <location>   Set an alternative destination directory
-    -g [location]   Generate configuration, with an optional location argument
+    -g <location>   Generate configuration to the location
 
     -h/--help       Prints this help message
 
@@ -24,10 +19,10 @@ EOF
 }
 
 createconf() {
-	[ -e $1 ] && die 'A configuration file already exists in %s' "$1"
+	[ -e $1 ] && die "A configuration file already exists in $1"
 	cat > $1 <<EOF
-# Add your git repos inside e.g. (something someotherthing thirdthing)
-GITREPOS=()
+# Add your git repos inside e.g. "something someotherthing thirdthing"
+GITREPOS=""
 
 # Add the source directory e.g. "/home/git"
 SRC=""
@@ -56,11 +51,12 @@ EOF
 	cat <<EOF
 Configuration file is created to $1
 EOF
+exit
 }
 
 getrepogit() {
-	for repo in ${GITREPOS[*]}; do
-		repogit+=("${SRC}/${repo}.git")
+	for repo in $GITREPOS; do
+		repogit="$repogit ${SRC}/${repo}.git"
 	done
 }	
 
@@ -71,8 +67,8 @@ stylepage() {
 }
 
 rsyncrepos() {
-	for repo in ${GITREPOS[*]}; do
-		rsync -a ${SRC}/${repo}.git ${DESTGIT} || die 'There was an error while rsyncing %s' "${repo}"
+	for repo in ${GITREPOS}; do
+		rsync -a ${SRC}/${repo}.git ${DESTGIT} || die "There was an error while rsyncing ${repo}"
 	done
 }
 
@@ -95,7 +91,7 @@ gitarchive() {
 }
 
 buildgit() {
-	for repo in ${GITREPOS[*]}; do
+	for repo in ${GITREPOS}; do
 		mkdir ${DEST}/${repo} 2>/dev/null
 		cd ${DEST}/${repo}
 		stagit ${SRC}/${repo}.git
@@ -103,7 +99,7 @@ buildgit() {
 		[ "$ARCHIVE" = "yes" ] && gitarchive ${repo}
 	done
 	cd $DEST
-	stagit-index ${repogit[*]} > $DEST/index.html
+	stagit-index ${repogit} > $DEST/index.html
 	stylepage $PWD
 }
 
@@ -112,26 +108,26 @@ if [ "$1" = "-h" ] || [ "$1" = "--help" ] ; then
 	exit
 fi
 
-while getopts ':c::s::d:g' flag; do
+while getopts ':c::s::d::g:' flag; do
 	case $flag in
-		c) realpath -e $OPTARG 2>/dev/null && CONFIG=$(realpath ${OPTARG}) || die 'Could not find configuration' ;;
-		s) realpath -e $OPTARG 2>/dev/null && ALTSRC=$(realpath ${OPTARG}) || die 'Could not find source directory' ;;
-		d) realpath -e $OPTARG 2>/dev/null && ALTDES=$(realpath ${OPTARG}) || die 'Could not find destination dir' ;;
+		c) realpath -e $OPTARG >/dev/null 2>&1 && CONFIG=$(realpath ${OPTARG}) || die 'Could not find configuration' ;;
+		s) realpath -e $OPTARG >/dev/null 2>&1 && ALTSRC=$(realpath ${OPTARG}) || die 'Could not find source directory' ;;
+		d) realpath -e $OPTARG >/dev/null 2>&1 && ALTDES=$(realpath ${OPTARG}) || die 'Could not find destination dir' ;;
 		g) gen=1; genloc=$OPTARG ;;
-		:) die '%s: option requires an argument -- '\''%s'\' "${0##*/}" "$OPTARG" ;;
-		?) die '%s: invalid option -- '\''%s'\' "${0##*/}" "$OPTARG" ;;
+		:) die "${0##*/}: option requires an argument -- $OPTARG" ;;
+		?) die "${0##*/}: invalid option -- $OPTARG" ;;
 	esac
 done
 [ -z $genloc ] && genloc="$HOME/.stagitconf"
-[ "$gen" = 1 ] && createconf $genloc && exit
+[ "$gen" = 1 ] && createconf $genloc 
 [ -z "$CONFIG" ] && CONFIG="$HOME/.stagitconf"
-[ -e "$CONFIG" ] || createconf $CONFIG && exit
+[ -e "$CONFIG" ] || createconf $CONFIG 
+. $CONFIG
 [ -n "$ALTSRC" ] && SRC=$ALTSRC
 [ -n "$ALTDES" ] && DES=$ALTDES
 if [ -z "$SRC" ] || [ -z "$GITREPOS" ] || [ -z "$DEST" ]; then
 	die 'Required variables are not set'
 fi
-declare -a repogit
 
 getrepogit
 [ -n "$DESTGIT" ] && rsyncrepos
