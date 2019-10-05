@@ -95,6 +95,7 @@ gitarchive() {
 }
 
 createraw() {
+	rm -r ${DEST}/raw/${1}  # Required to update files
 	mkdir -p ${DEST}/raw/${1}
 	cd ${DEST}/raw/${1}
 	git archive --remote=${SRC}/${1}.git HEAD | tar -x
