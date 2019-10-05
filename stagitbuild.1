@@ -15,10 +15,10 @@ stagitbuild \- builder - manager for stagit
 .SH DESCRIPTION
 .B stagitbuild
 is a simple shell script for managing your stagit page. Stagitbuild
-will read a configuration file and will generate a stagit page. It will
+will read a configuration file and will generate a stagit page. It can
 also read your git tags to generate tar.gz archives and put them to the
 .B /archives/reponame 
-directory
+directory and create raw directories if you want to.
 
 stagitbuild can rsync selected repos to a different location, which is useful in cases
 where you have public and private repositories in a certain location and want
@@ -48,5 +48,8 @@ to sync your public repositories to a place where you can serve them.
 .TP
 .B ARCHIVE
     \- option whether to create archives from git tags
+.TP
+.B RAW
+    \- option whether to create raw directories from upstream
 .SH AUTHOR
 Cem Keylan <cem@ckyln.com>
