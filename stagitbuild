@@ -47,6 +47,10 @@ LOGO=""
 ## archives from the tags of your repository
 #ARCHIVE="yes"
 
+## Uncomment this if you want stagitbuild to create
+## raw files of upstream
+#RAW="yes"
+
 EOF
 	cat <<EOF
 Configuration file is created to $1
@@ -90,6 +94,13 @@ gitarchive() {
 	fi
 }
 
+createraw() {
+	mkdir -p ${DEST}/raw/${1}
+	cd ${DEST}/raw/${1}
+	git archive --remote=${SRC}/${1}.git HEAD | tar -x
+
+}
+
 buildgit() {
 	for repo in ${GITREPOS}; do
 		mkdir ${DEST}/${repo} 2>/dev/null
@@ -97,6 +108,7 @@ buildgit() {
 		stagit ${SRC}/${repo}.git
 		stylepage $PWD
 		[ "$ARCHIVE" = "yes" ] && gitarchive ${repo}
+		[ "$RAW" = "yes" ] && createraw ${repo}
 	done
 	cd $DEST
 	stagit-index ${repogit} > $DEST/index.html
