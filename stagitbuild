@@ -92,12 +92,12 @@ gitarchive() {
 				-- \
 				"${t}"
 		done
-		git archive \
-			--format tar.gz \
-			--prefix "${name}-master/" \
-			-o "${DEST}/archives/${name}/master.tar.gz" \
-			HEAD  # Creates an archive from upstream
 	fi
+	git archive \
+		--format tar.gz \
+		--prefix "${name}-master/" \
+		-o "${DEST}/archives/${name}/master.tar.gz" \
+		HEAD  # Creates an archive from upstream
 }
 
 createraw() {
