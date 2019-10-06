@@ -12,6 +12,7 @@ ${0##*/} - simple build script for stagit repositories
     -s <location>   Set an alternative source directory
     -d <location>   Set an alternative destination directory
     -g <location>   Generate configuration to the location
+    -r 		    Create raw directories from upstream
 
     -h/--help       Prints this help message
 
@@ -121,12 +122,13 @@ if [ "$1" = "-h" ] || [ "$1" = "--help" ] ; then
 	exit
 fi
 
-while getopts ':c::s::d::g:' flag; do
+while getopts ':c::s::d::g:r' flag; do
 	case $flag in
 		c) realpath -e $OPTARG >/dev/null 2>&1 && CONFIG=$(realpath ${OPTARG}) || die 'Could not find configuration' ;;
 		s) realpath -e $OPTARG >/dev/null 2>&1 && ALTSRC=$(realpath ${OPTARG}) || die 'Could not find source directory' ;;
 		d) realpath -e $OPTARG >/dev/null 2>&1 && ALTDES=$(realpath ${OPTARG}) || die 'Could not find destination dir' ;;
-		g) gen=1; genloc=$OPTARG ;;
+		g) gen=1; gonloc=$OPTARG ;;
+		r) RAWOR="yes" ;;
 		:) die "${0##*/}: option requires an argument -- $OPTARG" ;;
 		?) die "${0##*/}: invalid option -- $OPTARG" ;;
 	esac
@@ -136,6 +138,7 @@ done
 [ -z "$CONFIG" ] && CONFIG="$HOME/.stagitconf"
 [ -e "$CONFIG" ] || createconf $CONFIG 
 . $CONFIG
+[ -n "$RAWOR" ] && RAW=$RAWOR
 [ -n "$ALTSRC" ] && SRC=$ALTSRC
 [ -n "$ALTDES" ] && DES=$ALTDES
 if [ -z "$SRC" ] || [ -z "$GITREPOS" ] || [ -z "$DEST" ]; then
