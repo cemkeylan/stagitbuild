@@ -80,8 +80,8 @@ rsyncrepos() {
 gitarchive() {
 	name="$1"
 	cd ${SRC}/${1}.git
+	mkdir -p ${DEST}/archives/${name}
 	if [ -n "$(git tag -l)" ]; then
-		mkdir -p ${DEST}/archives/${name}
 		git tag -l | while read -r t; do
 			f="${DEST}/archives/${name}/${name}-$(echo "${t}" | tr '/' '_').tar.gz"
 			test -f "${f}" && continue
