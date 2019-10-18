@@ -73,7 +73,7 @@ stylepage() {
 
 rsyncrepos() {
 	for repo in ${GITREPOS}; do
-		rsync -a ${SRC}/${repo}.git ${DESTGIT} || die "There was an error while rsyncing ${repo}"
+		rsync -a --delete ${SRC}/${repo}.git ${DESTGIT} || die "There was an error while rsyncing ${repo}"
 	done
 }
 
