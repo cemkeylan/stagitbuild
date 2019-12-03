@@ -28,6 +28,9 @@ GITREPOS=""
 # Add the source directory e.g. "/home/git"
 SRC=""
 
+# Add extension after repository names e.g. ".git", which will be converted to .git
+extension=".git"
+
 # Add the destination directory e.g. "/srv/http"
 # This is the directory where stagit will be served
 DEST=""
@@ -61,7 +64,7 @@ exit
 
 getrepogit() {
 	for repo in $GITREPOS; do
-		repogit="$repogit ${SRC}/${repo}.git"
+		repogit="$repogit ${SRC}/${repo}${extension}"
 	done
 }	
 
@@ -73,13 +76,13 @@ stylepage() {
 
 rsyncrepos() {
 	for repo in ${GITREPOS}; do
-		rsync -a --delete ${SRC}/${repo}.git ${DESTGIT} || die "There was an error while rsyncing ${repo}"
+		rsync -a --delete ${SRC}/${repo}${extension} ${DESTGIT} || die "There was an error while rsyncing ${repo}"
 	done
 }
 
 gitarchive() {
 	name="$1"
-	cd ${SRC}/${1}.git
+	cd ${SRC}/${1}${extension}
 	mkdir -p ${DEST}/archives/${name}
 	if [ -n "$(git tag -l)" ]; then
 		git tag -l | while read -r t; do
@@ -103,7 +106,7 @@ gitarchive() {
 createraw() {
 	mkdir -p ${DEST}/raw/${1}
 	cd ${DEST}/raw/${1}
-	git archive --remote=${SRC}/${1}.git HEAD | tar -x --overwrite
+	git archive --remote=${SRC}/${1}${extension} HEAD | tar -x --overwrite
 
 }
 
@@ -111,7 +114,7 @@ buildgit() {
 	for repo in ${GITREPOS}; do
 		mkdir ${DEST}/${repo} 2>/dev/null
 		cd ${DEST}/${repo}
-		stagit ${SRC}/${repo}.git
+		stagit ${SRC}/${repo}${extension}
 		stylepage $PWD
 		[ "$ARCHIVE" = "yes" ] && gitarchive ${repo}
 		[ "$RAW" = "yes" ] && createraw ${repo}
