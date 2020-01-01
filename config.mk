@@ -1,5 +1,5 @@
 # stagitbuild version
-VERSION=0.3
+VERSION=0.4
 
 # Customize below to your liking
 
