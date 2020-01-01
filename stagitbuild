@@ -113,8 +113,9 @@ createraw() {
 buildgit() {
 	for repo in ${GITREPOS}; do
 		mkdir ${DEST}/${repo} 2>/dev/null
+		mkdir -p ${HOME}/.cache/stagitbuild
 		cd ${DEST}/${repo}
-		stagit ${SRC}/${repo}${extension}
+		stagit -c ${HOME}/.cache/stagitbuild/${repo} ${SRC}/${repo}${extension}
 		stylepage $PWD
 		[ "$ARCHIVE" = "yes" ] && gitarchive ${repo}
 		[ "$RAW" = "yes" ] && createraw ${repo}
