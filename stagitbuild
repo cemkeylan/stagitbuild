@@ -3,7 +3,7 @@
 die() { printf "==> ERROR: %s\\n" "$1"; exit; }
 
 usage() {
-	cat << EOF
+        cat << EOF
 ${0##*/} - simple build script for stagit repositories
   
   Usage: ${0##*/} [options]
@@ -12,7 +12,7 @@ ${0##*/} - simple build script for stagit repositories
     -s <location>   Set an alternative source directory
     -d <location>   Set an alternative destination directory
     -g <location>   Generate configuration to the location
-    -r 		    Create raw directories from upstream
+    -r              Create raw directories from upstream
 
     -h/--help       Prints this help message
 
@@ -20,8 +20,8 @@ EOF
 }
 
 createconf() {
-	[ -e $1 ] && die "A configuration file already exists in $1"
-	cat > $1 <<EOF
+    [ -e "$1" ] && die "A configuration file already exists in $1"
+    cat > "$1" <<EOF
 # Add your git repos inside e.g. "something someotherthing thirdthing"
 GITREPOS=""
 
@@ -56,107 +56,107 @@ LOGO=""
 #RAW="yes"
 
 EOF
-	cat <<EOF
+    cat <<EOF
 Configuration file is created to $1
 EOF
 exit
 }
 
 getrepogit() {
-	for repo in $GITREPOS; do
-		repogit="$repogit ${SRC}/${repo}${extension}"
-	done
-}	
+    for repo in $GITREPOS; do
+        # extension may be unassigned and that's fine
+        # shellcheck disable=SC2154
+        repogit="$repogit ${SRC}/${repo}${extension}"
+    done
+}       
 
 stylepage() {
-	[ -n "$CSS" ] && [ -e "$CSS" ] && cp -uf $CSS $1/style.css
-	[ -n "$FAVI" ] && [ -e "$FAVI" ] && cp -uf $FAVI $1/favicon.png
-	[ -n "$LOGO" ] && [ -e "$LOGO" ] && cp -uf $LOGO $1/logo.png
+    [ -n "$CSS" ] && [ -e "$CSS" ] && cp -uf "$CSS" "$1/style.css"
+    [ -n "$FAVI" ] && [ -e "$FAVI" ] && cp -uf "$FAVI" "$1/favicon.png"
+    [ -n "$LOGO" ] && [ -e "$LOGO" ] && cp -uf "$LOGO" "$1/logo.png"
 }
 
 rsyncrepos() {
-	for repo in ${GITREPOS}; do
-		rsync -a --delete ${SRC}/${repo}${extension} ${DESTGIT} || die "There was an error while rsyncing ${repo}"
-	done
+    for repo in ${GITREPOS}; do
+        rsync -a --delete "${SRC}/${repo}${extension}" "${DESTGIT}" || die "There was an error while rsyncing ${repo}"
+    done
 }
 
 gitarchive() {
-	name="$1"
-	cd ${SRC}/${1}${extension}
-	mkdir -p ${DEST}/archives/${name}
-	if [ -n "$(git tag -l)" ]; then
-		git tag -l | while read -r t; do
-			f="${DEST}/archives/${name}/${name}-$(echo "${t}" | tr '/' '_').tar.gz"
-			test -f "${f}" && continue
-			git archive \
-				--format tar.gz \
-				--prefix "${name}-${t}/" \
-				-o "${f}" \
-				-- \
-				"${t}"
-		done
-	fi
-	git archive \
-		--format tar.gz \
-		--prefix "${name}-master/" \
-		-o "${DEST}/archives/${name}/master.tar.gz" \
-		HEAD  # Creates an archive from upstream
+    name="$1"
+    cd "${SRC}/${1}${extension}" || return 1
+    mkdir -p "${DEST}/archives/${name}"
+    if [ -n "$(git tag -l)" ]; then
+        git tag -l | while read -r t; do
+            f="${DEST}/archives/${name}/${name}-$(echo "${t}" | tr '/' '_').tar.gz"
+            test -f "${f}" && continue
+            git archive \
+                --format tar.gz \
+                --prefix "${name}-${t}/" \
+                -o "${f}" \
+                -- \
+                "${t}"
+        done
+    fi
+    git archive \
+        --format tar.gz \
+        --prefix "${name}-master/" \
+        -o "${DEST}/archives/${name}/master.tar.gz" \
+        HEAD  # Creates an archive from upstream
 }
 
 createraw() {
-	mkdir -p ${DEST}/raw/${1}
-	cd ${DEST}/raw/${1}
-	git archive --remote=${SRC}/${1}${extension} HEAD | tar -x --overwrite
+    mkdir -p "${DEST}/raw/${1}"
+    cd "${DEST}/raw/${1}" || return 1
+    git archive --remote="${SRC}/${1}${extension}" HEAD | tar -x --overwrite
 
 }
 
 buildgit() {
-	for repo in ${GITREPOS}; do
-		mkdir ${DEST}/${repo} 2>/dev/null
-		mkdir -p ${HOME}/.cache/stagitbuild
-		cd ${DEST}/${repo}
-		stagit -c ${HOME}/.cache/stagitbuild/${repo} ${SRC}/${repo}${extension}
-		stylepage $PWD
-		[ "$ARCHIVE" = "yes" ] && gitarchive ${repo}
-		[ "$RAW" = "yes" ] && createraw ${repo}
-	done
-	cd $DEST
-	stagit-index ${repogit} > $DEST/index.html
-	sed 's#<div id#<p>\n<div id#g' -i "$DEST/index.html"
-	[ "$ARCHIVE" = "yes" ] && sed 's#<div id#<a href="archives" style="margin-right:0.5em;" >Archives</a>\n<div id#g' -i "$DEST/index.html"
-	[ "$RAW" = "yes" ] && sed 's#<div id#<a href="raw" style="margin-right:0.5em;" >Raw Files</a></h2>\n<div id#g' -i "$DEST/index.html"
-	sed 's#<div id#</p>\n<div id#g' -i "$DEST/index.html"
-	stylepage $PWD
+    for repo in ${GITREPOS}; do
+            mkdir "${DEST}/${repo}" 2>/dev/null
+            mkdir -p "${HOME}/.cache/stagitbuild"
+            cd "${DEST}/${repo}" || return 1
+            stagit -c "${HOME}/.cache/stagitbuild/${repo}" "${SRC}/${repo}${extension}"
+            stylepage "$PWD"
+            [ "$ARCHIVE" = "yes" ] && gitarchive "${repo}"
+            [ "$RAW" = "yes" ] && createraw "${repo}"
+    done
+    cd "$DEST" || return 1
+    stagit-index "${repogit}" > "$DEST/index.html"
+    sed 's#<div id#<p>\n<div id#g' -i "$DEST/index.html"
+    [ "$ARCHIVE" = "yes" ] && sed 's#<div id#<a href="archives" style="margin-right:0.5em;" >Archives</a>\n<div id#g' -i "$DEST/index.html"
+    [ "$RAW" = "yes" ] && sed 's#<div id#<a href="raw" style="margin-right:0.5em;" >Raw Files</a></h2>\n<div id#g' -i "$DEST/index.html"
+    sed 's#<div id#</p>\n<div id#g' -i "$DEST/index.html"
+    stylepage "$PWD"
 }
 
 if [ "$1" = "-h" ] || [ "$1" = "--help" ] ; then
-	usage
-	exit
+    usage
+    exit
 fi
 
 while getopts ':c::s::d::g:r' flag; do
-	case $flag in
-		c) realpath -e $OPTARG >/dev/null 2>&1 && CONFIG=$(realpath ${OPTARG}) || die 'Could not find configuration' ;;
-		s) realpath -e $OPTARG >/dev/null 2>&1 && ALTSRC=$(realpath ${OPTARG}) || die 'Could not find source directory' ;;
-		d) realpath -e $OPTARG >/dev/null 2>&1 && ALTDES=$(realpath ${OPTARG}) || die 'Could not find destination dir' ;;
-		g) gen=1; gonloc=$OPTARG ;;
-		r) RAWOR="yes" ;;
-		:) die "${0##*/}: option requires an argument -- $OPTARG" ;;
-		?) die "${0##*/}: invalid option -- $OPTARG" ;;
-	esac
+    case $flag in
+        c) realpath -e "$OPTARG" >/dev/null 2>&1 && CONFIG=$(realpath "${OPTARG}") || die 'Could not find configuration' ;;
+        s) realpath -e "$OPTARG" >/dev/null 2>&1 && ALTSRC=$(realpath "${OPTARG}") || die 'Could not find source directory' ;;
+        d) realpath -e "$OPTARG" >/dev/null 2>&1 && ALTDES=$(realpath "${OPTARG}") || die 'Could not find destination dir' ;;
+        g) gen=1; genloc=$OPTARG ;;
+        r) RAWOR="yes" ;;
+        :) die "${0##*/}: option requires an argument -- $OPTARG" ;;
+        ?) die "${0##*/}: invalid option -- $OPTARG" ;;
+    esac
 done
-[ -z $genloc ] && genloc="$HOME/.stagitconf"
-[ "$gen" = 1 ] && createconf $genloc 
-[ -z "$CONFIG" ] && CONFIG="$HOME/.stagitconf"
-[ -e "$CONFIG" ] || createconf $CONFIG 
-. $CONFIG
-[ -n "$RAWOR" ] && RAW=$RAWOR
-[ -n "$ALTSRC" ] && SRC=$ALTSRC
-[ -n "$ALTDES" ] && DES=$ALTDES
-if [ -z "$SRC" ] || [ -z "$GITREPOS" ] || [ -z "$DEST" ]; then
-	die 'Required variables are not set'
-fi
+[ "$genloc" ] || genloc="$HOME/.stagitconf"
+[ "$gen" ] && createconf "$genloc" 
+[ "$CONFIG" ] || CONFIG="$HOME/.stagitconf"
+[ -e "$CONFIG" ] || createconf "$CONFIG" 
+. "$CONFIG"
+[ "$RAWOR" ] && RAW=$RAWOR
+[ "$ALTSRC" ] && SRC=$ALTSRC
+[ "$ALTDES" ] && DEST=$ALTDES
+[ "$SRC" ] || [ "$GITREPOS" ] || [ "$DEST" ] || die "Required variables are not set!"
 
 getrepogit
-[ -n "$DESTGIT" ] && rsyncrepos
+[ "$DESTGIT" ] && rsyncrepos
 buildgit
