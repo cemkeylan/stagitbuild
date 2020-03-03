@@ -123,7 +123,7 @@ buildgit() {
             [ "$RAW" = "yes" ] && createraw "${repo}"
     done
     cd "$DEST" || return 1
-    stagit-index "${repogit}" > "$DEST/index.html"
+    stagit-index ${repogit} > "$DEST/index.html"
     sed 's#<div id#<p>\n<div id#g' -i "$DEST/index.html"
     [ "$ARCHIVE" = "yes" ] && sed 's#<div id#<a href="archives" style="margin-right:0.5em;" >Archives</a>\n<div id#g' -i "$DEST/index.html"
     [ "$RAW" = "yes" ] && sed 's#<div id#<a href="raw" style="margin-right:0.5em;" >Raw Files</a></h2>\n<div id#g' -i "$DEST/index.html"
